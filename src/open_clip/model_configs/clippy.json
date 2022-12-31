@@ -1,0 +1,14 @@
+{
+    "embed_dim": 256,
+    "vision_cfg": {
+        "name": "clippy",
+        "image_size": 256,
+        "patch_size": null
+    },
+    "text_cfg": {
+        "name": "clippy",
+        "hf_tokenizer_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "context_length": 77
+    },
+    "custom_text": true
+}

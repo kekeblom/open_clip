@@ -15,6 +15,7 @@ from torch.utils.checkpoint import checkpoint
 
 from .hf_model import HFTextEncoder
 from .modified_resnet import ModifiedResNet
+from .clippy import ClippyVisionModel, ClippyTextEncoder
 from .timm_model import TimmModel
 from .transformer import LayerNormFp32, LayerNorm, QuickGELU, Attention, VisionTransformer, TextTransformer
 from .utils import to_2tuple
@@ -36,10 +37,12 @@ class CLIPVisionCfg:
     timm_pool: str = 'avg'  # feature pooling for timm model ('abs_attn', 'rot_attn', 'avg', '')
     timm_proj: str = 'linear'  # linear projection for timm model output ('linear', 'mlp', '')
     timm_proj_bias: bool = False  # enable bias final projection
+    name: str = None
 
 
 @dataclass
 class CLIPTextCfg:
+    name: str = None
     context_length: int = 77
     vocab_size: int = 49408
     width: int = 512
@@ -87,6 +90,10 @@ def _build_vision_tower(
             image_size=vision_cfg.image_size
         )
         act_layer = nn.GELU  # so that text transformer doesn't use QuickGELU w/ timm models
+    elif vision_cfg.name == 'clippy':
+        visual = ClippyVisionModel(
+            output_dim=embed_dim
+        )
     elif isinstance(vision_cfg.layers, (tuple, list)):
         vision_heads = vision_cfg.width * 32 // vision_cfg.head_width
         visual = ModifiedResNet(
@@ -134,6 +141,8 @@ def _build_text_tower(
             pooler_type=text_cfg.pooler_type,
             pretrained=text_cfg.hf_model_pretrained
         )
+    elif text_cfg.name == 'clippy':
+        text = ClippyTextEncoder(embed_dim)
     else:
         act_layer = QuickGELU if quick_gelu else nn.GELU
         norm_layer = LayerNormFp32 if cast_dtype in (torch.float16, torch.bfloat16) else LayerNorm
